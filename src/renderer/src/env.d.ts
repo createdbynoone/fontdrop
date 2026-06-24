@@ -13,8 +13,7 @@ declare global {
         set: (key: string) => Promise<{ success: boolean }>
       }
       update: {
-        onReady: (cb: () => void) => () => void
-        install: () => void
+        onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => () => void
       }
     }
   }

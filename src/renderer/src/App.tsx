@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { CheckCircle, GearSix, ArrowCircleUp } from '@phosphor-icons/react'
+import { CheckCircle, GearSix } from '@phosphor-icons/react'
 import { DropZone } from './components/DropZone'
 import { FontCard } from './components/FontCard'
 import { Settings } from './components/Settings'
+import { UpdateOverlay } from './components/UpdateOverlay'
 import { FontFamily, ParsedFont } from './types'
 
 function groupFontsByFamily(fonts: ParsedFont[]): FontFamily[] {
@@ -35,9 +36,15 @@ export default function App() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [parseErrors, setParseErrors] = useState<string[]>([])
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [updateReady, setUpdateReady] = useState(false)
+  const [updatePercent, setUpdatePercent] = useState<number | null>(null)
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [updateInstalling, setUpdateInstalling] = useState(false)
 
-  useEffect(() => window.fontDrop.update.onReady(() => setUpdateReady(true)), [])
+  useEffect(() => window.fontDrop.update.onProgress(({ percent, version, installing }) => {
+    setUpdatePercent(percent)
+    setUpdateVersion(version)
+    setUpdateInstalling(installing)
+  }), [])
 
   const handleDrop = useCallback(async (paths: string[]) => {
     setIsProcessing(true)
@@ -143,6 +150,7 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-[#ECEAE4] overflow-hidden">
       <Settings open={settingsOpen} onClose={handleCloseSettings} />
+      <UpdateOverlay percent={updatePercent} version={updateVersion} installing={updateInstalling} />
 
       {/* Titlebar — entire bar is draggable; only interactive elements opt out */}
       <div
@@ -186,16 +194,6 @@ export default function App() {
                 Clear
               </button>
             </>
-          )}
-          {updateReady && (
-            <button
-              onClick={() => window.fontDrop.update.install()}
-              className="flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 bg-[#00C853] text-white rounded hover:bg-[#00A846] transition-colors"
-              title="Restart to update"
-            >
-              <ArrowCircleUp size={11} weight="fill" />
-              Update ready
-            </button>
           )}
           <button
             onClick={handleOpenSettings}

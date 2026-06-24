@@ -10,11 +10,11 @@ const fontDropAPI = {
     set: (key: string) => ipcRenderer.invoke('icon:set', key),
   },
   update: {
-    onReady: (cb: () => void) => {
-      ipcRenderer.on('update:ready', cb)
-      return () => ipcRenderer.removeListener('update:ready', cb)
+    onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, data: { percent: number; version: string | null; installing: boolean }) => cb(data)
+      ipcRenderer.on('update:progress', handler)
+      return () => ipcRenderer.removeListener('update:progress', handler)
     },
-    install: () => ipcRenderer.send('update:install'),
   },
 }
 

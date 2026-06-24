@@ -293,19 +293,34 @@ app.whenReady().then(() => {
   // ── Auto-updater (production only) ────────────────────────────────────────
   if (!is.dev) {
     autoUpdater.autoDownload = true
-    autoUpdater.autoInstallOnAppQuit = true
-    autoUpdater.logger = null // silence verbose logs
+    autoUpdater.autoInstallOnAppQuit = false
+    autoUpdater.logger = null
+
+    let pendingVersion: string | null = null
+
+    autoUpdater.on('update-available', (info) => {
+      pendingVersion = info.version
+    })
+
+    autoUpdater.on('download-progress', (progress) => {
+      mainWindow?.webContents.send('update:progress', {
+        percent: Math.round(progress.percent),
+        version: pendingVersion,
+        installing: false,
+      })
+    })
 
     autoUpdater.on('update-downloaded', () => {
-      mainWindow?.webContents.send('update:ready')
+      mainWindow?.webContents.send('update:progress', {
+        percent: 100,
+        version: pendingVersion,
+        installing: true,
+      })
+      setTimeout(() => autoUpdater.quitAndInstall(false, true), 2000)
     })
 
     autoUpdater.checkForUpdates().catch(() => {})
   }
-
-  ipcMain.on('update:install', () => {
-    autoUpdater.quitAndInstall()
-  })
 
   createWindow()
 
