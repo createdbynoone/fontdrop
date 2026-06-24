@@ -6,6 +6,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import crypto from 'crypto'
+import { execFileSync } from 'child_process'
 
 const ALLOWED_FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2', '.dfont'])
 
@@ -403,6 +404,15 @@ app.whenReady().then(() => {
     })
 
     autoUpdater.on('update-downloaded', () => {
+      // Remove quarantine from the cached update before electron-updater moves it
+      // to Applications — without this macOS Gatekeeper blocks the relaunch.
+      if (process.platform === 'darwin') {
+        try {
+          const updateCache = path.join(os.homedir(), 'Library', 'Caches', 'fontdrop-updater')
+          execFileSync('xattr', ['-rd', 'com.apple.quarantine', updateCache], { timeout: 5000 })
+        } catch { /* best-effort */ }
+      }
+
       mainWindow?.webContents.send('update:progress', {
         percent: 100,
         version: pendingVersion,
