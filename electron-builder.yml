@@ -1,0 +1,49 @@
+appId: com.fontdrop.app
+productName: fontdrop
+copyright: "© 2026 fontdrop"
+
+publish:
+  provider: github
+  owner: createdbynoone
+  repo: fontdrop
+  releaseType: release
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+  - node_modules/opentype.js/**
+
+extraResources:
+  - from: build/icons
+    to: icons
+    filter:
+      - '*.png'
+
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  # identity: null → builds without code signing (for local use)
+  # Remove this line and set up signing for App Store / notarization
+  identity: null
+  target:
+    - target: dmg
+      arch:
+        - universal
+
+dmg:
+  title: fontdrop
+  iconSize: 80
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 165
+      y: 185
+    - x: 375
+      y: 185
+      type: link
+      path: /Applications
