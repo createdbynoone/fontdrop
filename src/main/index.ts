@@ -369,12 +369,29 @@ app.whenReady().then(() => {
   if (!is.dev) {
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = false
-    autoUpdater.logger = null
+
+    // Write logs to ~/Library/Logs/fontdrop/updater.log
+    const logFile = path.join(app.getPath('logs'), 'updater.log')
+    const logStream = fs.createWriteStream(logFile, { flags: 'a' })
+    const logLine = (msg: string) => logStream.write(`[${new Date().toISOString()}] ${msg}\n`)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    autoUpdater.logger = {
+      info:  (msg: unknown) => logLine(`INFO  ${msg}`),
+      warn:  (msg: unknown) => logLine(`WARN  ${msg}`),
+      error: (msg: unknown) => logLine(`ERROR ${msg}`),
+      debug: (msg: unknown) => logLine(`DEBUG ${msg}`),
+    } as any
 
     let pendingVersion: string | null = null
 
+    autoUpdater.on('checking-for-update', () => logLine('Checking for update…'))
+    autoUpdater.on('update-not-available', () => logLine('No update available'))
+    autoUpdater.on('error', (err) => logLine(`Error: ${err?.message ?? err}`))
+
     autoUpdater.on('update-available', (info) => {
       pendingVersion = info.version
+      logLine(`Update available: ${info.version}`)
     })
 
     autoUpdater.on('download-progress', (progress) => {
@@ -395,7 +412,8 @@ app.whenReady().then(() => {
     })
 
     mainWindow!.webContents.once('did-finish-load', () => {
-      autoUpdater.checkForUpdates().catch(() => {})
+      logLine(`App version: ${app.getVersion()} — calling checkForUpdates`)
+      autoUpdater.checkForUpdates().catch((err) => logLine(`checkForUpdates failed: ${err?.message ?? err}`))
     })
   }
 
