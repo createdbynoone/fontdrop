@@ -290,7 +290,12 @@ app.whenReady().then(() => {
     }
   })
 
+  createWindow()
+
   // ── Auto-updater (production only) ────────────────────────────────────────
+  // Must run after createWindow() so mainWindow is valid when events fire.
+  // We delay checkForUpdates() until the renderer finishes loading so IPC
+  // messages are never dropped into an unready webContents.
   if (!is.dev) {
     autoUpdater.autoDownload = true
     autoUpdater.autoInstallOnAppQuit = false
@@ -319,10 +324,10 @@ app.whenReady().then(() => {
       setTimeout(() => autoUpdater.quitAndInstall(false, true), 2000)
     })
 
-    autoUpdater.checkForUpdates().catch(() => {})
+    mainWindow!.webContents.once('did-finish-load', () => {
+      autoUpdater.checkForUpdates().catch(() => {})
+    })
   }
-
-  createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
