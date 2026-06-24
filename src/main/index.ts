@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage, session } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { autoUpdater } from 'electron-updater'
@@ -6,6 +6,14 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import crypto from 'crypto'
+
+const ALLOWED_FONT_EXTENSIONS = new Set(['.ttf', '.otf', '.woff', '.woff2', '.dfont'])
+
+function isValidFontPath(fp: unknown): fp is string {
+  if (typeof fp !== 'string' || fp.length === 0 || fp.length > 4096) return false
+  const ext = path.extname(fp).toLowerCase()
+  return ALLOWED_FONT_EXTENSIONS.has(ext)
+}
 
 let mainWindow: BrowserWindow | null = null
 
@@ -185,6 +193,19 @@ async function parseFontFile(filePath: string): Promise<ParsedFont> {
   }
 }
 
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: blob: https://fonts.gstatic.com",
+  "img-src 'self' data: blob:",
+  "connect-src 'none'",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+].join('; ')
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 860,
@@ -202,13 +223,35 @@ function createWindow(): void {
       sandbox: true,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      navigateOnDragDrop: false,
     },
   })
+
+  // Inject CSP on every response (works for both file:// and http:// in dev)
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [CSP],
+      },
+    })
+  })
+
+  // Block all navigation away from the app
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const localUrl = is.dev
+      ? process.env['ELECTRON_RENDERER_URL'] ?? ''
+      : `file://${join(__dirname, '../renderer/index.html')}`
+    if (!url.startsWith(localUrl)) event.preventDefault()
+  })
+
+  // Block all popup/new-window creation
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   // Devtools only in dev mode — never exposed in production
   if (!is.dev) {
     mainWindow.webContents.on('devtools-opened', () => {
-      mainWindow.webContents.closeDevTools()
+      mainWindow!.webContents.closeDevTools()
     })
   }
 
@@ -221,8 +264,27 @@ function createWindow(): void {
   }
 }
 
+// Prevent any remote content from creating additional BrowserWindows
+app.on('web-contents-created', (_event, contents) => {
+  contents.on('will-navigate', (event, url) => {
+    if (!/^(file:|http:\/\/localhost)/.test(url)) event.preventDefault()
+  })
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }))
+})
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.fontdrop.app')
+
+  // Enforce CSP for all sessions (covers any additional webContents)
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [CSP],
+        'X-Content-Type-Options': ['nosniff'],
+      },
+    })
+  })
 
   // Apply saved icon preference on launch
   const prefs = loadPrefs()
@@ -244,8 +306,11 @@ app.whenReady().then(() => {
     return { success: true }
   })
 
-  ipcMain.handle('fonts:parse', async (_event, filePaths: string[]) => {
-    const results = await Promise.allSettled(filePaths.map((fp) => parseFontFile(fp)))
+  ipcMain.handle('fonts:parse', async (_event, filePaths: unknown) => {
+    if (!Array.isArray(filePaths)) return { fonts: [], errors: ['Invalid input'] }
+
+    const validPaths = filePaths.filter(isValidFontPath)
+    const results = await Promise.allSettled(validPaths.map((fp) => parseFontFile(fp)))
 
     const fonts: ParsedFont[] = []
     const errors: string[] = []
@@ -255,20 +320,21 @@ app.whenReady().then(() => {
       if (r.status === 'fulfilled') {
         fonts.push(r.value)
       } else {
-        errors.push(`${path.basename(filePaths[i])}: ${(r.reason as Error).message}`)
+        errors.push(`${path.basename(validPaths[i])}: ${(r.reason as Error).message}`)
       }
     }
 
     return { fonts, errors }
   })
 
-  ipcMain.handle('fonts:install', async (_event, filePaths: string[]) => {
-    const errors: string[] = []
+  ipcMain.handle('fonts:install', async (_event, filePaths: unknown) => {
+    if (!Array.isArray(filePaths)) return { success: false, errors: ['Invalid input'] }
 
+    const errors: string[] = []
     await fs.promises.mkdir(FONTS_DIR, { recursive: true })
 
     await Promise.all(
-      filePaths.map(async (filePath) => {
+      filePaths.filter(isValidFontPath).map(async (filePath) => {
         try {
           const dest = path.join(FONTS_DIR, path.basename(filePath))
           await fs.promises.copyFile(filePath, dest)
@@ -281,9 +347,13 @@ app.whenReady().then(() => {
     return { success: errors.length === 0, errors }
   })
 
-  ipcMain.handle('fonts:check', async (_event, fileName: string) => {
+  ipcMain.handle('fonts:check', async (_event, fileName: unknown) => {
+    if (typeof fileName !== 'string') return false
+    const ext = path.extname(fileName).toLowerCase()
+    if (!ALLOWED_FONT_EXTENSIONS.has(ext)) return false
     try {
-      await fs.promises.access(path.join(FONTS_DIR, fileName))
+      const safeName = path.basename(fileName)
+      await fs.promises.access(path.join(FONTS_DIR, safeName))
       return true
     } catch {
       return false

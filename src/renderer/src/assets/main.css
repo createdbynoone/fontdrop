@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* ── Typography ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'GC Commune';
+  src: url('./fonts/GC-Commune.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ── Design tokens ──────────────────────────────────────────────────────── */
 :root {
   --fd-bg:            #ECEAE4;
@@ -39,11 +48,21 @@ body {
   margin: 0;
   padding: 0;
   background-color: var(--fd-bg);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'GC Commune', Georgia, serif;
+  --font-display: 'GC Commune', Georgia, serif;
+  --font-body: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
   -webkit-user-select: none;
   user-select: none;
   color: var(--fd-text);
+}
+
+/* Roboto for UI controls and small utility text */
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-body);
 }
 
 /* Allow text selection inside previews */
