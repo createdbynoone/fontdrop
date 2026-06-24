@@ -38,22 +38,32 @@ export const UpdateOverlay = memo(function UpdateOverlay({
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
-            <div className="pointer-events-auto bg-[#ECEAE4] border-2 border-[#1A1A1A] rounded-2xl shadow-[6px_6px_0_#1A1A1A] w-[360px] max-w-[90vw] p-6">
+            <div
+              className="pointer-events-auto border-2 rounded-2xl w-[360px] max-w-[90vw] p-6"
+              style={{
+                backgroundColor: 'var(--fd-bg)',
+                borderColor: 'var(--fd-text)',
+                boxShadow: '6px 6px 0 var(--fd-text)',
+              }}
+            >
               {/* Icon + title */}
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-[#1A1A1A]">
+                <div
+                  className="w-9 h-9 flex items-center justify-center rounded-xl"
+                  style={{ backgroundColor: 'var(--fd-text)' }}
+                >
                   {installing ? (
-                    <CheckCircle size={18} weight="fill" className="text-[#00C853]" />
+                    <CheckCircle size={18} weight="fill" className="text-[#14C245]" />
                   ) : (
-                    <ArrowCircleUp size={18} weight="fill" className="text-white" />
+                    <ArrowCircleUp size={18} weight="fill" style={{ color: 'var(--fd-bg)' }} />
                   )}
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold tracking-tight text-[#1A1A1A]">
+                  <p className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fd-text)' }}>
                     {installing ? 'Installing update…' : 'Downloading update'}
                   </p>
                   {version && (
-                    <p className="text-[11px] font-mono text-gray-500 mt-0.5">
+                    <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--fd-text-muted)' }}>
                       v{version}
                     </p>
                   )}
@@ -61,9 +71,10 @@ export const UpdateOverlay = memo(function UpdateOverlay({
               </div>
 
               {/* Progress bar */}
-              <div className="h-2 w-full bg-[#D6D3CC] rounded-full overflow-hidden">
+              <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fd-track)' }}>
                 <motion.div
-                  className="h-full bg-[#1A1A1A] rounded-full"
+                  className="h-full rounded-full"
+                  style={{ backgroundColor: 'var(--fd-text)' }}
                   initial={{ width: '0%' }}
                   animate={{ width: `${percent ?? 0}%` }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -72,10 +83,10 @@ export const UpdateOverlay = memo(function UpdateOverlay({
 
               {/* Percent / status */}
               <div className="flex items-center justify-between mt-2">
-                <p className="text-[10px] font-mono text-gray-400">
+                <p className="text-[10px] font-mono" style={{ color: 'var(--fd-text-muted)' }}>
                   {installing ? 'Restarting app…' : 'fontdrop will restart automatically'}
                 </p>
-                <p className="text-[11px] font-mono font-bold text-[#1A1A1A]">
+                <p className="text-[11px] font-mono font-bold" style={{ color: 'var(--fd-text)' }}>
                   {percent ?? 0}%
                 </p>
               </div>

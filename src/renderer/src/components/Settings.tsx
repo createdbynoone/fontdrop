@@ -23,9 +23,11 @@ const ICON_OPTIONS: { key: string; label: string; src: string }[] = [
 interface SettingsProps {
   open: boolean
   onClose: () => void
+  isDark: boolean
+  onToggleDark: (value: boolean) => void
 }
 
-export const Settings = memo(function Settings({ open, onClose }: SettingsProps) {
+export const Settings = memo(function Settings({ open, onClose, isDark, onToggleDark }: SettingsProps) {
   const [currentIcon, setCurrentIcon] = useState<string>('Default')
   const [applying, setApplying] = useState<string | null>(null)
 
@@ -67,24 +69,72 @@ export const Settings = memo(function Settings({ open, onClose }: SettingsProps)
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
           >
             <div
-              className="pointer-events-auto bg-[#ECEAE4] border-2 border-[#1A1A1A] rounded-2xl shadow-[6px_6px_0_#1A1A1A] w-[480px] max-w-[90vw] p-6"
+              className="pointer-events-auto border-2 rounded-2xl w-[480px] max-w-[90vw] p-6"
+              style={{
+                backgroundColor: 'var(--fd-bg)',
+                borderColor: 'var(--fd-text)',
+                boxShadow: '6px 6px 0 var(--fd-text)',
+              }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-[13px] font-bold tracking-tight text-[#1A1A1A]">
+                <h2 className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fd-text)' }}>
                   Settings
                 </h2>
                 <button
                   onClick={onClose}
-                  className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-black hover:bg-gray-200 transition-all duration-150"
+                  className="w-6 h-6 flex items-center justify-center rounded transition-all duration-150"
+                  style={{ color: 'var(--fd-text-muted)' }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLElement).style.color = 'var(--fd-text)'
+                    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fd-gray-hover)'
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLElement).style.color = 'var(--fd-text-muted)'
+                    ;(e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'
+                  }}
                 >
                   <X size={13} weight="bold" />
                 </button>
               </div>
 
-              {/* Section */}
-              <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#888] mb-3">
+              {/* ── Dark mode toggle ────────────────────────────────────── */}
+              <p className="text-[10px] font-mono uppercase tracking-[0.12em] mb-3" style={{ color: 'var(--fd-text-muted)' }}>
+                Appearance
+              </p>
+
+              <div
+                className="flex items-center justify-between rounded-xl px-4 py-3 mb-5 border"
+                style={{ backgroundColor: 'var(--fd-surface)', borderColor: 'var(--fd-border-subtle)' }}
+              >
+                <div>
+                  <p className="text-[12px] font-bold" style={{ color: 'var(--fd-text)' }}>Dark mode</p>
+                  <p className="text-[10px] font-mono mt-0.5" style={{ color: 'var(--fd-text-muted)' }}>
+                    {isDark ? 'On' : 'Off'}
+                  </p>
+                </div>
+                {/* Toggle switch */}
+                <button
+                  onClick={() => onToggleDark(!isDark)}
+                  className="relative w-11 h-6 rounded-full border-2 transition-colors duration-200 focus:outline-none"
+                  style={{
+                    backgroundColor: isDark ? 'var(--fd-text)' : 'var(--fd-track)',
+                    borderColor: 'var(--fd-text)',
+                  }}
+                  aria-label="Toggle dark mode"
+                >
+                  <motion.div
+                    animate={{ x: isDark ? 19 : 1 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="absolute top-0.5 w-4 h-4 rounded-full"
+                    style={{ backgroundColor: isDark ? 'var(--fd-bg)' : 'var(--fd-text)' }}
+                  />
+                </button>
+              </div>
+
+              {/* ── App icon ───────────────────────────────────────────── */}
+              <p className="text-[10px] font-mono uppercase tracking-[0.12em] mb-3" style={{ color: 'var(--fd-text-muted)' }}>
                 App Icon
               </p>
 
@@ -97,11 +147,24 @@ export const Settings = memo(function Settings({ open, onClose }: SettingsProps)
                       key={key}
                       onClick={() => handleSelect(key)}
                       disabled={applying !== null}
-                      className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 select-none ${
-                        isActive
-                          ? 'border-[#1A1A1A] bg-white shadow-[3px_3px_0_#1A1A1A]'
-                          : 'border-transparent bg-white/50 hover:border-[#1A1A1A] hover:bg-white'
-                      }`}
+                      className="relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-150 select-none"
+                      style={{
+                        borderColor: isActive ? 'var(--fd-text)' : 'transparent',
+                        backgroundColor: isActive ? 'var(--fd-surface)' : 'var(--fd-surface-2)',
+                        boxShadow: isActive ? '3px 3px 0 var(--fd-text)' : 'none',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--fd-text)'
+                          ;(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fd-surface)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          ;(e.currentTarget as HTMLElement).style.borderColor = 'transparent'
+                          ;(e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fd-surface-2)'
+                        }
+                      }}
                     >
                       <img
                         src={src}
@@ -109,18 +172,24 @@ export const Settings = memo(function Settings({ open, onClose }: SettingsProps)
                         className={`w-16 h-16 rounded-xl transition-opacity duration-150 ${isApplying ? 'opacity-60' : 'opacity-100'}`}
                         draggable={false}
                       />
-                      <span className={`text-[10px] font-mono ${isActive ? 'font-bold text-[#1A1A1A]' : 'text-gray-500'}`}>
+                      <span
+                        className="text-[10px] font-mono"
+                        style={{
+                          fontWeight: isActive ? 700 : 400,
+                          color: isActive ? 'var(--fd-text)' : 'var(--fd-text-muted)',
+                        }}
+                      >
                         {label}
                       </span>
                       {isActive && (
-                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#00C853]" />
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#14C245]" />
                       )}
                     </button>
                   )
                 })}
               </div>
 
-              <p className="text-[10px] font-mono text-gray-400 mt-4">
+              <p className="text-[10px] font-mono mt-4" style={{ color: 'var(--fd-text-muted)' }}>
                 Changes apply immediately to the Dock icon.
               </p>
             </div>

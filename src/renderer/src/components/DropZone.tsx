@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { ArrowDown, Spinner } from '@phosphor-icons/react'
+import { useIsDark } from '../context/ThemeContext'
 
 const ACCEPTED = /\.(ttf|otf|woff|woff2|dfont)$/i
 
@@ -13,7 +14,11 @@ interface DropZoneProps {
 }
 
 export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProps) {
+  const isDark = useIsDark()
   const [isDragging, setIsDragging] = useState(false)
+
+  const idleText = isDark ? '#ECEAE4' : '#1A1A1A'
+  const idleBorder = isDark ? '#ECEAE4' : '#1A1A1A'
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -51,6 +56,8 @@ export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProp
     [onDrop]
   )
 
+  const dragBg = isDark ? '#2D1109' : '#FFF0ED'
+
   if (compact) {
     return (
       <motion.div
@@ -59,11 +66,12 @@ export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProp
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         animate={{
-          borderColor: isDragging ? '#FF3D00' : '#1A1A1A',
-          backgroundColor: isDragging ? '#FFF0ED' : '#FFFFFF',
+          borderColor: isDragging ? '#FF3D00' : idleBorder,
+          backgroundColor: isDragging ? dragBg : 'transparent',
         }}
         transition={{ duration: 0.12 }}
-        className="w-full py-2.5 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 text-sm font-mono text-gray-500 cursor-default"
+        className="w-full py-2.5 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 text-sm font-mono cursor-default"
+        style={{ color: 'var(--fd-text-muted)' }}
       >
         {isProcessing ? (
           <>
@@ -81,24 +89,22 @@ export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProp
   }
 
   return (
-    // Outer container: solid border, fills the space
     <motion.div
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       animate={{
-        borderColor: isDragging ? '#FF3D00' : '#1A1A1A',
-        backgroundColor: isDragging ? '#FFF0ED' : 'transparent',
+        borderColor: isDragging ? '#FF3D00' : idleBorder,
+        backgroundColor: isDragging ? dragBg : 'transparent',
       }}
       transition={{ duration: 0.12 }}
       className="flex flex-col items-center justify-center h-full rounded-xl border-2 cursor-default select-none"
     >
-      {/* Inner dashed box — wraps only the drop content */}
       <motion.div
         animate={{
-          borderColor: isDragging ? '#FF3D00' : '#1A1A1A',
-          boxShadow: isDragging ? '5px 5px 0 #FF3D00' : '5px 5px 0 #1A1A1A',
+          borderColor: isDragging ? '#FF3D00' : idleBorder,
+          boxShadow: isDragging ? '5px 5px 0 #FF3D00' : `5px 5px 0 ${idleBorder}`,
         }}
         transition={{ duration: 0.12 }}
         className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed px-16 py-12"
@@ -113,21 +119,21 @@ export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProp
           className="mb-5"
         >
           {isProcessing ? (
-            <Spinner size={36} weight="bold" className="animate-spin text-gray-400" />
+            <Spinner size={36} weight="bold" className="animate-spin" style={{ color: 'var(--fd-text-muted)' }} />
           ) : (
             <ArrowDown
               size={36}
               weight="bold"
-              style={{ color: isDragging ? '#FF3D00' : '#1A1A1A' }}
+              style={{ color: isDragging ? '#FF3D00' : idleText }}
             />
           )}
         </motion.div>
 
-        <p className="text-xl font-bold mb-1.5 tracking-tight">
+        <p className="text-xl font-bold mb-1.5 tracking-tight" style={{ color: 'var(--fd-text)' }}>
           {isProcessing ? 'Reading font data...' : isDragging ? 'Release to load' : 'Drop fonts here'}
         </p>
 
-        <p className="text-sm font-mono mb-5" style={{ color: isDragging ? '#FF3D00' : '#888' }}>
+        <p className="text-sm font-mono mb-5" style={{ color: isDragging ? '#FF3D00' : 'var(--fd-text-muted)' }}>
           {isProcessing ? 'Parsing font metadata' : 'TTF · OTF · WOFF · WOFF2'}
         </p>
 
@@ -138,8 +144,8 @@ export function DropZone({ onDrop, isProcessing, compact = false }: DropZoneProp
                 key={ext}
                 className="px-2 py-1 text-[10px] font-mono font-bold border rounded tracking-widest"
                 style={{
-                  borderColor: isDragging ? '#FF3D00' : '#C0BDB6',
-                  color: isDragging ? '#FF3D00' : '#888',
+                  borderColor: isDragging ? '#FF3D00' : 'var(--fd-track)',
+                  color: isDragging ? '#FF3D00' : 'var(--fd-text-muted)',
                 }}
               >
                 {ext}

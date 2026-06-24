@@ -7,6 +7,7 @@ import { DropZone } from './components/DropZone'
 import { FontCard } from './components/FontCard'
 import { Settings } from './components/Settings'
 import { UpdateOverlay } from './components/UpdateOverlay'
+import { ThemeContext } from './context/ThemeContext'
 import { FontFamily, ParsedFont } from './types'
 
 function groupFontsByFamily(fonts: ParsedFont[]): FontFamily[] {
@@ -40,6 +41,19 @@ export default function App() {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [updateInstalling, setUpdateInstalling] = useState(false)
 
+  // Dark mode — read from localStorage synchronously before first render
+  const [isDark, setIsDark] = useState(() => {
+    const dark = localStorage.getItem('fontdrop-dark') === 'true'
+    if (dark) document.documentElement.classList.add('dark')
+    return dark
+  })
+
+  const handleToggleDark = useCallback((value: boolean) => {
+    setIsDark(value)
+    document.documentElement.classList.toggle('dark', value)
+    localStorage.setItem('fontdrop-dark', String(value))
+  }, [])
+
   useEffect(() => window.fontDrop.update.onProgress(({ percent, version, installing }) => {
     setUpdatePercent(percent)
     setUpdateVersion(version)
@@ -58,7 +72,6 @@ export default function App() {
       if (result.fonts.length > 0) {
         const incoming = groupFontsByFamily(result.fonts)
 
-        // Check which fonts are already installed
         await Promise.all(
           incoming.map(async (fam) => {
             const checks = await Promise.all(
@@ -77,7 +90,6 @@ export default function App() {
             if (!existingMap.has(fam.name)) {
               existingMap.set(fam.name, fam)
             } else {
-              // Merge new font weights into the existing family
               const existing = existingMap.get(fam.name)!
               const existingFileNames = new Set(existing.fonts.map((f) => f.fileName))
               const newFonts = fam.fonts.filter((f) => !existingFileNames.has(f.fileName))
@@ -148,125 +160,137 @@ export default function App() {
   )
 
   return (
-    <div className="h-screen flex flex-col bg-[#ECEAE4] overflow-hidden">
-      <Settings open={settingsOpen} onClose={handleCloseSettings} />
-      <UpdateOverlay percent={updatePercent} version={updateVersion} installing={updateInstalling} />
+    <ThemeContext.Provider value={isDark}>
+      <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--fd-bg)' }}>
+        <Settings
+          open={settingsOpen}
+          onClose={handleCloseSettings}
+          isDark={isDark}
+          onToggleDark={handleToggleDark}
+        />
+        <UpdateOverlay percent={updatePercent} version={updateVersion} installing={updateInstalling} />
 
-      {/* Titlebar — entire bar is draggable; only interactive elements opt out */}
-      <div
-        className="h-10 flex-shrink-0 flex items-center pl-[80px] pr-3 gap-3"
-        style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-      >
-        <span
-          className="text-[13px] font-bold tracking-tight text-gray-900"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        >
-          fontdrop
-        </span>
-
-        {/* Spacer — stays draggable */}
-        <div className="flex-1" />
-
+        {/* Titlebar */}
         <div
-          className="flex items-center gap-3"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          className="h-10 flex-shrink-0 flex items-center pl-[80px] pr-3 gap-3"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
-          {families.length > 0 && (
-            <>
-              {installedCount > 0 && (
-                <span className="flex items-center gap-1 text-[11px] font-mono text-[#00C853]">
-                  <CheckCircle size={11} weight="fill" />
-                  {installedCount} installed
-                </span>
-              )}
-              {pendingCount > 0 && families.length > 1 && (
+          <span
+            className="text-[13px] font-bold tracking-tight"
+            style={{ WebkitAppRegion: 'no-drag', color: 'var(--fd-text)' } as React.CSSProperties}
+          >
+            fontdrop
+          </span>
+
+          <div className="flex-1" />
+
+          <div
+            className="flex items-center gap-3"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          >
+            {families.length > 0 && (
+              <>
+                {installedCount > 0 && (
+                  <span className="flex items-center gap-1 text-[11px] font-mono text-[#14C245]">
+                    <CheckCircle size={11} weight="fill" />
+                    {installedCount} installed
+                  </span>
+                )}
+                {pendingCount > 0 && families.length > 1 && (
+                  <button
+                    onClick={handleInstallAll}
+                    className="text-[11px] font-mono font-bold px-2 py-0.5 rounded transition-colors"
+                    style={{ backgroundColor: 'var(--fd-text)', color: 'var(--fd-bg)' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#FF3D00'; (e.currentTarget as HTMLElement).style.color = '#fff' }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fd-text)'; (e.currentTarget as HTMLElement).style.color = 'var(--fd-bg)' }}
+                  >
+                    Install all
+                  </button>
+                )}
                 <button
-                  onClick={handleInstallAll}
-                  className="text-[11px] font-mono font-bold px-2 py-0.5 bg-[#1A1A1A] text-white rounded hover:bg-[#FF3D00] transition-colors"
+                  onClick={handleClearAll}
+                  className="text-[11px] font-mono transition-colors"
+                  style={{ color: 'var(--fd-text-muted)' }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--fd-text)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--fd-text-muted)' }}
                 >
-                  Install all
+                  Clear
                 </button>
-              )}
-              <button
-                onClick={handleClearAll}
-                className="text-[11px] font-mono text-gray-400 hover:text-black transition-colors"
-              >
-                Clear
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleOpenSettings}
-            className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-black hover:bg-gray-200 transition-all duration-150"
-            title="Settings"
-          >
-            <GearSix size={14} weight="bold" />
-          </button>
+              </>
+            )}
+            <button
+              onClick={handleOpenSettings}
+              className="w-6 h-6 flex items-center justify-center rounded transition-all duration-150"
+              style={{ color: 'var(--fd-text-muted)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--fd-text)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--fd-gray-hover)' }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--fd-text-muted)'; (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent' }}
+              title="Settings"
+            >
+              <GearSix size={14} weight="bold" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Parse errors */}
-      <AnimatePresence>
-        {parseErrors.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mx-4 mb-2 px-3 py-2 bg-[#FFF0ED] border border-[#FF3D00] rounded-lg overflow-hidden"
-          >
-            {parseErrors.map((e, i) => (
-              <p key={i} className="text-[11px] font-mono text-[#FF3D00]">
-                {e}
-              </p>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main content area */}
-      <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
-        <AnimatePresence mode="wait">
-          {families.length === 0 ? (
-            // Empty state - full-size drop zone
+        {/* Parse errors */}
+        <AnimatePresence>
+          {parseErrors.length > 0 && (
             <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              className="h-full"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mx-4 mb-2 px-3 py-2 border border-[#FF3D00] rounded-lg overflow-hidden"
+              style={{ backgroundColor: isDark ? '#2D1109' : '#FFF0ED' }}
             >
-              <DropZone onDrop={handleDrop} isProcessing={isProcessing} />
-            </motion.div>
-          ) : (
-            // Loaded state - compact drop zone + grid
-            <motion.div
-              key="loaded"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="pb-2"
-            >
-              {/* Compact drop zone to add more */}
-              <div className="mb-4">
-                <DropZone onDrop={handleDrop} isProcessing={isProcessing} compact />
-              </div>
-
-              {/* Font family cards - responsive bento grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                <AnimatePresence>
-                  {families.map((family) => (
-                    <FontCard
-                      key={family.id}
-                      family={family}
-                      onInstall={handleInstall}
-                      onRemove={handleRemove}
-                    />
-                  ))}
-                </AnimatePresence>
-              </div>
+              {parseErrors.map((e, i) => (
+                <p key={i} className="text-[11px] font-mono text-[#FF3D00]">
+                  {e}
+                </p>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Main content area */}
+        <div className="flex-1 overflow-auto px-4 pb-4 min-h-0">
+          <AnimatePresence mode="wait">
+            {families.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                className="h-full"
+              >
+                <DropZone onDrop={handleDrop} isProcessing={isProcessing} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="loaded"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="pb-2"
+              >
+                <div className="mb-4">
+                  <DropZone onDrop={handleDrop} isProcessing={isProcessing} compact />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                  <AnimatePresence>
+                    {families.map((family) => (
+                      <FontCard
+                        key={family.id}
+                        family={family}
+                        onInstall={handleInstall}
+                        onRemove={handleRemove}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
+    </ThemeContext.Provider>
   )
 }
