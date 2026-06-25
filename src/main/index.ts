@@ -196,9 +196,9 @@ async function parseFontFile(filePath: string): Promise<ParsedFont> {
 
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' data: blob: https://fonts.gstatic.com",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data: blob:",
   "img-src 'self' data: blob:",
   "connect-src 'none'",
   "frame-src 'none'",
@@ -469,7 +469,7 @@ app.whenReady().then(() => {
         const scriptPath = path.join(os.tmpdir(), 'fontdrop-install.sh')
         fs.writeFileSync(scriptPath, script, { mode: 0o755 })
 
-        app.on('before-quit', () => {
+        app.once('before-quit', () => {
           const child = require('child_process').spawn('/bin/bash', [scriptPath], {
             detached: true, stdio: 'ignore',
           })

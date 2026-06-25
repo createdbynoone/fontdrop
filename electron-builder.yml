@@ -17,6 +17,16 @@ files:
   - out/**
   - package.json
   - node_modules/opentype.js/**
+  - "!node_modules/tiny-inflate/**"
+  - "!node_modules/string.prototype.codepointat/**"
+  - "!**/*.map"
+  - "!**/*.md"
+  - "!**/LICENSE*"
+  - "!**/CHANGELOG*"
+  - "!**/test/**"
+  - "!**/tests/**"
+  - "!**/spec/**"
+  - "!**/docs/**"
 
 extraResources:
   - from: build/icons
