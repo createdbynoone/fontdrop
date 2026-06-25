@@ -1,6 +1,6 @@
 {
   "name": "fontdrop",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "description": "Drop fonts. Install instantly.",
   "main": "out/main/index.js",
   "homepage": ".",

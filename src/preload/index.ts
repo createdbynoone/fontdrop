@@ -10,6 +10,11 @@ const fontDropAPI = {
   },
   setBackground: (isDark: boolean) => ipcRenderer.invoke('theme:setBackground', isDark),
   restartToUpdate: () => ipcRenderer.invoke('update:restart'),
+  windowControls: {
+    close: () => ipcRenderer.invoke('window:close'),
+    minimize: () => ipcRenderer.invoke('window:minimize'),
+    fullscreen: () => ipcRenderer.invoke('window:fullscreen'),
+  },
   update: {
     onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: { percent: number; version: string | null; installing: boolean }) => cb(data)

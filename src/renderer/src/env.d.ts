@@ -14,6 +14,11 @@ declare global {
       }
       setBackground: (isDark: boolean) => Promise<void>
       restartToUpdate: () => Promise<void>
+      windowControls: {
+        close: () => Promise<void>
+        minimize: () => Promise<void>
+        fullscreen: () => Promise<void>
+      }
       update: {
         onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => () => void
       }

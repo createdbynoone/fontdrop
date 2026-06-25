@@ -7,6 +7,7 @@ import { DropZone } from './components/DropZone'
 import { FontCard } from './components/FontCard'
 import { Settings } from './components/Settings'
 import { UpdateOverlay } from './components/UpdateOverlay'
+import { TrafficLights } from './components/TrafficLights'
 import { ThemeContext } from './context/ThemeContext'
 import { FontFamily, ParsedFont } from './types'
 
@@ -176,9 +177,10 @@ export default function App() {
 
         {/* Titlebar */}
         <div
-          className="h-10 flex-shrink-0 flex items-center pl-[80px] pr-3 gap-3"
+          className="h-10 flex-shrink-0 flex items-center pl-4 pr-3 gap-3"
           style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
         >
+          <TrafficLights />
           <span
             className="text-[13px] font-bold tracking-tight"
             style={{ WebkitAppRegion: 'no-drag', color: 'var(--fd-text)' } as React.CSSProperties}

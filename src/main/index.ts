@@ -215,7 +215,6 @@ function createWindow(): void {
     minHeight: 460,
     show: false,
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 16, y: 14 },
     backgroundColor: '#ECEAE4',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -255,6 +254,8 @@ function createWindow(): void {
       mainWindow!.webContents.closeDevTools()
     })
   }
+
+  mainWindow.setWindowButtonVisibility(false)
 
   mainWindow.on('ready-to-show', () => mainWindow!.show())
 
@@ -349,6 +350,10 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('update:restart', () => app.quit())
+
+  ipcMain.handle('window:close', () => mainWindow?.close())
+  ipcMain.handle('window:minimize', () => mainWindow?.minimize())
+  ipcMain.handle('window:fullscreen', () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()))
 
   ipcMain.handle('theme:setBackground', (_event, isDark: unknown) => {
     if (typeof isDark !== 'boolean') return
