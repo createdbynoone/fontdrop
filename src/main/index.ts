@@ -214,7 +214,7 @@ function createWindow(): void {
     minWidth: 620,
     minHeight: 460,
     show: false,
-    titleBarStyle: 'hiddenInset',
+    titleBarStyle: 'hidden',
     trafficLightPosition: { x: 16, y: 14 },
     backgroundColor: '#ECEAE4',
     webPreferences: {
@@ -346,6 +346,11 @@ app.whenReady().then(() => {
     )
 
     return { success: errors.length === 0, errors }
+  })
+
+  ipcMain.handle('theme:setBackground', (_event, isDark: unknown) => {
+    if (typeof isDark !== 'boolean') return
+    mainWindow?.setBackgroundColor(isDark ? '#1C1B18' : '#ECEAE4')
   })
 
   ipcMain.handle('fonts:check', async (_event, fileName: unknown) => {

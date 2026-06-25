@@ -8,6 +8,7 @@ const fontDropAPI = {
     getState: () => ipcRenderer.invoke('icon:getState'),
     set: (key: string) => ipcRenderer.invoke('icon:set', key),
   },
+  setBackground: (isDark: boolean) => ipcRenderer.invoke('theme:setBackground', isDark),
   update: {
     onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => {
       const handler = (_: Electron.IpcRendererEvent, data: { percent: number; version: string | null; installing: boolean }) => cb(data)

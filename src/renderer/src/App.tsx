@@ -52,7 +52,11 @@ export default function App() {
     setIsDark(value)
     document.documentElement.classList.toggle('dark', value)
     localStorage.setItem('fontdrop-dark', String(value))
+    window.fontDrop.setBackground(value)
   }, [])
+
+  // Sync native window background color on mount
+  useEffect(() => { window.fontDrop.setBackground(isDark) }, [])
 
   useEffect(() => window.fontDrop.update.onProgress(({ percent, version, installing }) => {
     setUpdatePercent(percent)

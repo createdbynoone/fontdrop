@@ -12,6 +12,7 @@ declare global {
         getState: () => Promise<{ current: string; keys: readonly string[] }>
         set: (key: string) => Promise<{ success: boolean }>
       }
+      setBackground: (isDark: boolean) => Promise<void>
       update: {
         onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => () => void
       }
