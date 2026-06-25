@@ -408,25 +408,49 @@ app.whenReady().then(() => {
       })
     })
 
-    autoUpdater.on('update-downloaded', () => {
-      // Remove quarantine from the cached update before electron-updater moves it
-      // to Applications — without this macOS Gatekeeper blocks the relaunch.
-      if (process.platform === 'darwin') {
-        const appName = app.getName()
-        for (const dirName of [`${appName}-updater`, `${appName.toLowerCase()}-updater`]) {
-          try {
-            execFileSync('xattr', ['-rd', 'com.apple.quarantine',
-              path.join(os.homedir(), 'Library', 'Caches', dirName)], { timeout: 5000 })
-          } catch { /* best-effort */ }
-        }
-      }
+    autoUpdater.on('update-downloaded', (info) => {
+      // Squirrel.Mac requires a valid Developer ID certificate to install updates.
+      // Since this app is unsigned, Squirrel always rejects the update with
+      // "el objeto de código no está firmado". We bypass Squirrel entirely:
+      // a detached shell script extracts the ZIP, removes quarantine, replaces
+      // the app bundle, and relaunches — then we just call app.quit().
+      const downloadedZip = (info as unknown as { downloadedFile?: string }).downloadedFile
 
-      mainWindow?.webContents.send('update:progress', {
-        percent: 100,
-        version: pendingVersion,
-        installing: true,
-      })
-      setTimeout(() => autoUpdater.quitAndInstall(false, true), 2000)
+      if (process.platform === 'darwin' && downloadedZip) {
+        const appBundle = app.getPath('exe').split('/Contents/')[0]
+        const extractDir = path.join(os.tmpdir(), 'fontdrop-update-extract')
+
+        const script = [
+          '#!/bin/bash',
+          'sleep 4',
+          `rm -rf "${extractDir}"`,
+          `mkdir -p "${extractDir}"`,
+          `unzip -q "${downloadedZip}" -d "${extractDir}"`,
+          `NEW_APP=$(find "${extractDir}" -maxdepth 1 -name "*.app" | head -1)`,
+          '[ -z "$NEW_APP" ] && exit 1',
+          `xattr -rd com.apple.quarantine "$NEW_APP" 2>/dev/null || true`,
+          `rm -rf "${appBundle}"`,
+          `cp -r "$NEW_APP" "${appBundle}"`,
+          `open "${appBundle}"`,
+        ].join('\n')
+
+        const scriptPath = path.join(os.tmpdir(), 'fontdrop-install.sh')
+        fs.writeFileSync(scriptPath, script, { mode: 0o755 })
+        const child = require('child_process').spawn('/bin/bash', [scriptPath], {
+          detached: true, stdio: 'ignore',
+        })
+        child.unref()
+
+        mainWindow?.webContents.send('update:progress', {
+          percent: 100, version: pendingVersion, installing: true,
+        })
+        setTimeout(() => app.quit(), 2000)
+      } else {
+        mainWindow?.webContents.send('update:progress', {
+          percent: 100, version: pendingVersion, installing: true,
+        })
+        setTimeout(() => autoUpdater.quitAndInstall(true, false), 2000)
+      }
     })
 
     mainWindow!.webContents.once('did-finish-load', () => {
