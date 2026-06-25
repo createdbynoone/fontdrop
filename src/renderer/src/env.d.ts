@@ -13,6 +13,7 @@ declare global {
         set: (key: string) => Promise<{ success: boolean }>
       }
       setBackground: (isDark: boolean) => Promise<void>
+      restartToUpdate: () => Promise<void>
       update: {
         onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => () => void
       }

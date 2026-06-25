@@ -348,6 +348,8 @@ app.whenReady().then(() => {
     return { success: errors.length === 0, errors }
   })
 
+  ipcMain.handle('update:restart', () => app.quit())
+
   ipcMain.handle('theme:setBackground', (_event, isDark: unknown) => {
     if (typeof isDark !== 'boolean') return
     mainWindow?.setBackgroundColor(isDark ? '#1C1B18' : '#ECEAE4')
@@ -409,17 +411,15 @@ app.whenReady().then(() => {
     })
 
     autoUpdater.on('update-downloaded', (info) => {
-      // Squirrel.Mac requires a valid Developer ID certificate to install updates.
-      // Since this app is unsigned, Squirrel always rejects the update with
-      // "el objeto de código no está firmado". We bypass Squirrel entirely:
-      // a detached shell script extracts the ZIP, removes quarantine, replaces
-      // the app bundle, and relaunches — then we just call app.quit().
       const downloadedZip = (info as unknown as { downloadedFile?: string }).downloadedFile
+      logLine(`Update downloaded: ${downloadedZip ?? 'path unknown'}`)
 
       if (process.platform === 'darwin' && downloadedZip) {
         const appBundle = app.getPath('exe').split('/Contents/')[0]
         const extractDir = path.join(os.tmpdir(), 'fontdrop-update-extract')
 
+        // Write installer script now; it runs when user clicks "Restart to update"
+        // which triggers app.quit() via update:restart IPC.
         const script = [
           '#!/bin/bash',
           'sleep 4',
@@ -436,21 +436,19 @@ app.whenReady().then(() => {
 
         const scriptPath = path.join(os.tmpdir(), 'fontdrop-install.sh')
         fs.writeFileSync(scriptPath, script, { mode: 0o755 })
-        const child = require('child_process').spawn('/bin/bash', [scriptPath], {
-          detached: true, stdio: 'ignore',
-        })
-        child.unref()
 
-        mainWindow?.webContents.send('update:progress', {
-          percent: 100, version: pendingVersion, installing: true,
+        app.on('before-quit', () => {
+          const child = require('child_process').spawn('/bin/bash', [scriptPath], {
+            detached: true, stdio: 'ignore',
+          })
+          child.unref()
         })
-        setTimeout(() => app.quit(), 2000)
-      } else {
-        mainWindow?.webContents.send('update:progress', {
-          percent: 100, version: pendingVersion, installing: true,
-        })
-        setTimeout(() => autoUpdater.quitAndInstall(true, false), 2000)
       }
+
+      // Signal the renderer: download complete, show "Restart to update" button
+      mainWindow?.webContents.send('update:progress', {
+        percent: 100, version: pendingVersion, installing: true,
+      })
     })
 
     mainWindow!.webContents.once('did-finish-load', () => {

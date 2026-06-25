@@ -2,18 +2,18 @@
 
 import { memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowCircleUp, CheckCircle } from '@phosphor-icons/react'
+import { ArrowCircleUp, ArrowCounterClockwise } from '@phosphor-icons/react'
 
 interface UpdateOverlayProps {
   percent: number | null
   version: string | null
-  installing: boolean
+  readyToRestart: boolean
 }
 
 export const UpdateOverlay = memo(function UpdateOverlay({
   percent,
   version,
-  installing,
+  readyToRestart,
 }: UpdateOverlayProps) {
   const visible = percent !== null
 
@@ -52,15 +52,11 @@ export const UpdateOverlay = memo(function UpdateOverlay({
                   className="w-9 h-9 flex items-center justify-center rounded-xl"
                   style={{ backgroundColor: 'var(--fd-text)' }}
                 >
-                  {installing ? (
-                    <CheckCircle size={18} weight="fill" className="text-[#14C245]" />
-                  ) : (
-                    <ArrowCircleUp size={18} weight="fill" style={{ color: 'var(--fd-bg)' }} />
-                  )}
+                  <ArrowCircleUp size={18} weight="fill" style={{ color: 'var(--fd-bg)' }} />
                 </div>
                 <div>
                   <p className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fd-text)' }}>
-                    {installing ? 'Installing update…' : 'Downloading update'}
+                    {readyToRestart ? 'Update ready' : 'Downloading update'}
                   </p>
                   {version && (
                     <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--fd-text-muted)' }}>
@@ -70,26 +66,54 @@ export const UpdateOverlay = memo(function UpdateOverlay({
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fd-track)' }}>
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ backgroundColor: 'var(--fd-text)' }}
-                  initial={{ width: '0%' }}
-                  animate={{ width: `${percent ?? 0}%` }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                />
-              </div>
-
-              {/* Percent / status */}
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-[10px] font-mono" style={{ color: 'var(--fd-text-muted)' }}>
-                  {installing ? 'Restarting app…' : 'fontdrop will restart automatically'}
-                </p>
-                <p className="text-[11px] font-mono font-bold" style={{ color: 'var(--fd-text)' }}>
-                  {percent ?? 0}%
-                </p>
-              </div>
+              {readyToRestart ? (
+                /* Restart button */
+                <button
+                  onClick={() => window.fontDrop.restartToUpdate()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-[13px] font-bold tracking-tight transition-colors"
+                  style={{
+                    backgroundColor: 'var(--fd-text)',
+                    borderColor: 'var(--fd-text)',
+                    color: 'var(--fd-bg)',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget
+                    el.style.backgroundColor = '#FF3D00'
+                    el.style.borderColor = '#FF3D00'
+                    el.style.color = '#fff'
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget
+                    el.style.backgroundColor = 'var(--fd-text)'
+                    el.style.borderColor = 'var(--fd-text)'
+                    el.style.color = 'var(--fd-bg)'
+                  }}
+                >
+                  <ArrowCounterClockwise size={15} weight="bold" />
+                  Restart to update
+                </button>
+              ) : (
+                /* Progress bar + percent */
+                <>
+                  <div className="h-2 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--fd-track)' }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ backgroundColor: 'var(--fd-text)' }}
+                      initial={{ width: '0%' }}
+                      animate={{ width: `${percent ?? 0}%` }}
+                      transition={{ duration: 0.3, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-[10px] font-mono" style={{ color: 'var(--fd-text-muted)' }}>
+                      FontDrop will restart automatically
+                    </p>
+                    <p className="text-[11px] font-mono font-bold" style={{ color: 'var(--fd-text)' }}>
+                      {percent ?? 0}%
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </>
