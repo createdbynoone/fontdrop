@@ -78,8 +78,8 @@ export const UpdateOverlay = memo(function UpdateOverlay({
                   }}
                   onMouseEnter={(e) => {
                     const el = e.currentTarget
-                    el.style.backgroundColor = '#FF3D00'
-                    el.style.borderColor = '#FF3D00'
+                    el.style.backgroundColor = '#22c55e'
+                    el.style.borderColor = '#22c55e'
                     el.style.color = '#fff'
                   }}
                   onMouseLeave={(e) => {
@@ -104,10 +104,7 @@ export const UpdateOverlay = memo(function UpdateOverlay({
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                     />
                   </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <p className="text-[10px] font-mono" style={{ color: 'var(--fd-text-muted)' }}>
-                      FontDrop will restart automatically
-                    </p>
+                  <div className="flex items-center justify-end mt-2">
                     <p className="text-[11px] font-mono font-bold" style={{ color: 'var(--fd-text)' }}>
                       {percent ?? 0}%
                     </p>
