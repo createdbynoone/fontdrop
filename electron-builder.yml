@@ -1,6 +1,7 @@
 appId: com.fontdrop.app
 productName: FontDrop
 copyright: "© 2026 FontDrop"
+afterPack: scripts/sign-adhoc.js
 
 publish:
   provider: github
