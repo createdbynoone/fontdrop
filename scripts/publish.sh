@@ -11,8 +11,8 @@ echo "==> Building v$VERSION"
 npx electron-vite build
 npx electron-builder --config electron-builder.yml --publish never
 
-ZIP="dist/FontDrop-${VERSION}-universal-mac.zip"
-DMG="dist/FontDrop-${VERSION}-universal.dmg"
+ZIP="dist/FontDrop-${VERSION}-arm64-mac.zip"
+DMG="dist/FontDrop-${VERSION}-arm64.dmg"
 
 echo "==> Computing correct sha512s"
 ZIP_SHA=$(shasum -a 512 "$ZIP" | awk '{print $1}' | xxd -r -p | base64)

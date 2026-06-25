@@ -351,6 +351,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle('update:restart', () => app.quit())
 
+  ipcMain.handle('update:retry', () => {
+    const cacheDir = path.join(app.getPath('userData').replace(/Application Support\/fontdrop$/, ''), 'Caches/fontdrop-updater')
+    try { fs.rmSync(cacheDir, { recursive: true, force: true }) } catch { /* ignore */ }
+    autoUpdater.checkForUpdates().catch(() => {
+      mainWindow?.webContents.send('update:error')
+    })
+  })
+
   ipcMain.handle('window:close', () => mainWindow?.close())
   ipcMain.handle('window:minimize', () => mainWindow?.minimize())
   ipcMain.handle('window:fullscreen', () => mainWindow?.setFullScreen(!mainWindow.isFullScreen()))
@@ -397,10 +405,29 @@ app.whenReady().then(() => {
     } as any
 
     let pendingVersion: string | null = null
+    let retried = false
 
     autoUpdater.on('checking-for-update', () => logLine('Checking for update…'))
     autoUpdater.on('update-not-available', () => logLine('No update available'))
-    autoUpdater.on('error', (err) => logLine(`Error: ${err?.message ?? err}`))
+    autoUpdater.on('error', (err) => {
+      logLine(`Error: ${err?.message ?? err}`)
+      // Auto-clear cache and retry once — sha512 mismatches are the most common cause
+      if (!retried) {
+        retried = true
+        const cacheDir = path.join(app.getPath('userData').replace(/Application Support\/fontdrop$/, ''), 'Caches/fontdrop-updater')
+        try { fs.rmSync(cacheDir, { recursive: true, force: true }) } catch { /* ignore */ }
+        logLine('Cache cleared — retrying update check…')
+        setTimeout(() => {
+          autoUpdater.checkForUpdates().catch((e) => {
+            logLine(`Retry failed: ${e?.message ?? e}`)
+            mainWindow?.webContents.send('update:error')
+          })
+        }, 1500)
+      } else {
+        logLine('Retry also failed — notifying renderer')
+        mainWindow?.webContents.send('update:error')
+      }
+    })
 
     autoUpdater.on('update-available', (info) => {
       pendingVersion = info.version

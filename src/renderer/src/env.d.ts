@@ -21,6 +21,8 @@ declare global {
       }
       update: {
         onProgress: (cb: (data: { percent: number; version: string | null; installing: boolean }) => void) => () => void
+        onError: (cb: () => void) => () => void
+        retry: () => Promise<void>
       }
     }
   }

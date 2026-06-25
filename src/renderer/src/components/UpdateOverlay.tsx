@@ -2,20 +2,22 @@
 
 import { memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { ArrowCircleUp, ArrowCounterClockwise } from '@phosphor-icons/react'
+import { ArrowCircleUp, ArrowCounterClockwise, Warning } from '@phosphor-icons/react'
 
 interface UpdateOverlayProps {
   percent: number | null
   version: string | null
   readyToRestart: boolean
+  error?: boolean
 }
 
 export const UpdateOverlay = memo(function UpdateOverlay({
   percent,
   version,
   readyToRestart,
+  error = false,
 }: UpdateOverlayProps) {
-  const visible = percent !== null
+  const visible = percent !== null || error
 
   return (
     <AnimatePresence>
@@ -50,13 +52,15 @@ export const UpdateOverlay = memo(function UpdateOverlay({
               <div className="flex items-center gap-3 mb-5">
                 <div
                   className="w-9 h-9 flex items-center justify-center rounded-xl"
-                  style={{ backgroundColor: 'var(--fd-text)' }}
+                  style={{ backgroundColor: error ? '#FF3D00' : 'var(--fd-text)' }}
                 >
-                  <ArrowCircleUp size={18} weight="fill" style={{ color: 'var(--fd-bg)' }} />
+                  {error
+                    ? <Warning size={18} weight="fill" style={{ color: '#fff' }} />
+                    : <ArrowCircleUp size={18} weight="fill" style={{ color: 'var(--fd-bg)' }} />}
                 </div>
                 <div>
                   <p className="text-[13px] font-bold tracking-tight" style={{ color: 'var(--fd-text)' }}>
-                    {readyToRestart ? 'Update ready' : 'Downloading update'}
+                    {error ? 'Update failed' : readyToRestart ? 'Update ready' : 'Downloading update'}
                   </p>
                   {version && (
                     <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--fd-text-muted)' }}>
@@ -66,11 +70,37 @@ export const UpdateOverlay = memo(function UpdateOverlay({
                 </div>
               </div>
 
-              {readyToRestart ? (
+              {error ? (
+                /* Retry button */
+                <button
+                  onClick={() => window.fontDrop.update.retry()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-[13px] font-bold tracking-tight"
+                  style={{
+                    backgroundColor: 'var(--fd-text)',
+                    borderColor: 'var(--fd-text)',
+                    color: 'var(--fd-bg)',
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget
+                    el.style.backgroundColor = '#FF3D00'
+                    el.style.borderColor = '#FF3D00'
+                    el.style.color = '#fff'
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget
+                    el.style.backgroundColor = 'var(--fd-text)'
+                    el.style.borderColor = 'var(--fd-text)'
+                    el.style.color = 'var(--fd-bg)'
+                  }}
+                >
+                  <ArrowCounterClockwise size={15} weight="bold" />
+                  Retry update
+                </button>
+              ) : readyToRestart ? (
                 /* Restart button */
                 <button
                   onClick={() => window.fontDrop.restartToUpdate()}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-[13px] font-bold tracking-tight transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-[13px] font-bold tracking-tight"
                   style={{
                     backgroundColor: 'var(--fd-text)',
                     borderColor: 'var(--fd-text)',

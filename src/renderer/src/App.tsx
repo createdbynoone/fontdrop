@@ -41,6 +41,7 @@ export default function App() {
   const [updatePercent, setUpdatePercent] = useState<number | null>(null)
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [readyToRestart, setReadyToRestart] = useState(false)
+  const [updateError, setUpdateError] = useState(false)
 
   // Dark mode — read from localStorage synchronously before first render
   const [isDark, setIsDark] = useState(() => {
@@ -60,9 +61,14 @@ export default function App() {
   useEffect(() => { window.fontDrop.setBackground(isDark) }, [])
 
   useEffect(() => window.fontDrop.update.onProgress(({ percent, version, installing }) => {
+    setUpdateError(false)
     setUpdatePercent(percent)
     setUpdateVersion(version)
     if (installing) setReadyToRestart(true)
+  }), [])
+
+  useEffect(() => window.fontDrop.update.onError(() => {
+    setUpdateError(true)
   }), [])
 
   const handleDrop = useCallback(async (paths: string[]) => {
@@ -173,7 +179,7 @@ export default function App() {
           isDark={isDark}
           onToggleDark={handleToggleDark}
         />
-        <UpdateOverlay percent={updatePercent} version={updateVersion} readyToRestart={readyToRestart} />
+        <UpdateOverlay percent={updatePercent} version={updateVersion} readyToRestart={readyToRestart} error={updateError} />
 
         {/* Titlebar */}
         <div

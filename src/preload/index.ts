@@ -21,6 +21,12 @@ const fontDropAPI = {
       ipcRenderer.on('update:progress', handler)
       return () => ipcRenderer.removeListener('update:progress', handler)
     },
+    onError: (cb: () => void) => {
+      const handler = () => cb()
+      ipcRenderer.on('update:error', handler)
+      return () => ipcRenderer.removeListener('update:error', handler)
+    },
+    retry: () => ipcRenderer.invoke('update:retry'),
   },
 }
 

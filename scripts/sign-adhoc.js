@@ -5,10 +5,9 @@ const fs = require('fs')
 exports.default = async function (context) {
   if (process.platform !== 'darwin') return
 
-  // electron-builder builds x64 and arm64 slices first, then merges them.
-  // Signing individual slices causes CodeResources to differ → merge fails.
-  // Arch.universal = 4 → only sign the already-merged universal binary.
-  if (context.arch !== 4) return
+  // Skip x64 (arch=1) and x64 slice of universal builds (arch=0).
+  // Sign arm64-only (arch=3) and universal (arch=4) directly.
+  if (context.arch === 0 || context.arch === 1) return
 
   const { appOutDir, packager } = context
   const productName = packager.appInfo.productFilename
