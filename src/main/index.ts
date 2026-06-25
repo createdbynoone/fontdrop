@@ -407,10 +407,13 @@ app.whenReady().then(() => {
       // Remove quarantine from the cached update before electron-updater moves it
       // to Applications — without this macOS Gatekeeper blocks the relaunch.
       if (process.platform === 'darwin') {
-        try {
-          const updateCache = path.join(os.homedir(), 'Library', 'Caches', 'fontdrop-updater')
-          execFileSync('xattr', ['-rd', 'com.apple.quarantine', updateCache], { timeout: 5000 })
-        } catch { /* best-effort */ }
+        const appName = app.getName()
+        for (const dirName of [`${appName}-updater`, `${appName.toLowerCase()}-updater`]) {
+          try {
+            execFileSync('xattr', ['-rd', 'com.apple.quarantine',
+              path.join(os.homedir(), 'Library', 'Caches', dirName)], { timeout: 5000 })
+          } catch { /* best-effort */ }
+        }
       }
 
       mainWindow?.webContents.send('update:progress', {

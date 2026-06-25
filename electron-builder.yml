@@ -1,6 +1,6 @@
 appId: com.fontdrop.app
-productName: fontdrop
-copyright: "© 2026 fontdrop"
+productName: FontDrop
+copyright: "© 2026 FontDrop"
 
 publish:
   provider: github
@@ -38,7 +38,7 @@ mac:
         - universal
 
 dmg:
-  title: fontdrop
+  title: FontDrop
   iconSize: 80
   window:
     width: 540

@@ -179,7 +179,7 @@ export default function App() {
             className="text-[13px] font-bold tracking-tight"
             style={{ WebkitAppRegion: 'no-drag', color: 'var(--fd-text)' } as React.CSSProperties}
           >
-            fontdrop
+            FontDrop
           </span>
 
           <div className="flex-1" />
